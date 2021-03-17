@@ -1,19 +1,19 @@
 #ifndef Robot_8613
 #define Robot_8613
 
-#include "frc/Joystick.h"
-#include <frc/TimedRobot.h>
-#include <frc/smartdashboard/SendableChooser.h>
-#include <rev/CANSparkMax.h>
-#include <frc/smartdashboard/SmartDashboard.h>
-#include <unistd.h>
-#include <chrono>
-#include <math.h>
-#include <iostream>
-#include <string>
+/**
+ * Linear access pipeline Controlmap()->RobotMap()->SubSystems()->Robot()
+ */
 
+/**
+ * Robotmap, access to controlmap and motor controllers
+ */
+#include "Robotmap.h"
 
-
+/**
+ * Subsystems
+ */
+#include "Drivesystem.h"
 
 class Robot : public frc::TimedRobot {
 public:
@@ -34,62 +34,10 @@ public:
 	void TestPeriodic() override;
 
 private:
-	// private stuff
-	rev::CANSparkMax *leftF;
-	rev::CANSparkMax *leftB;
-	rev::CANSparkMax *rightF;
-	rev::CANSparkMax *rightB;
-	frc::Joystick *j;
+	RobotMap robotMap;
 
-	std::chrono::time_point<std::chrono::system_clock> t_gear_now;
-	std::chrono::time_point<std::chrono::system_clock> t_gear_last_press;
-	std::chrono::time_point<std::chrono::system_clock> t_mode_now;
-	std::chrono::time_point<std::chrono::system_clock> t_mode_last_press;
-	std::chrono::time_point<std::chrono::system_clock> t_pref_now;
-	std::chrono::time_point<std::chrono::system_clock> t_pref_last_press;
-	float lacceleration = 1; // acceleration in time it takes to get to max speed
-	float racceleration = 1;
-	float motor_lspeed = 0; // default starting motor speed
-	float motor_rspeed = 0;
-	int mode; // mode value for driving type
-	int tank_drive_mode = 0;
-	int arcade_drive_mode = 1;
-	float gear_increment = 0.125; // increments of gear multiplier
-	float gear = 0.5; // default gear setting
-	int dpad_up = 0;
-	int dpad_right = 90;
-	int dpad_down = 180;
-	int dpad_left = 270; 
-	float deadband_threshold = 0.1; // Threshold where motors are set to 0 e.g. 0.1 -> between -0.1 and 0.1 motors set to 0.
-	float press_delay = 0.01; // time of button press before code responds
-
-	int left_stick_x = 0;
-	int left_stick_y = 1;
-	int right_stick_x = 4;
-	int right_stick_y = 5;
-	int left_trigger = 2;
-	int right_trigger = 3;
-	
-	int button_a = 1;
-	int button_b = 2;
-	int button_x = 3;
-	int button_y = 4;
-	int left_bumper = 5;
-	int right_bumper = 6;
-	int back = 7; // also left arrow
-	int start = 8; // also right arrow
-	int left_stick = 9;
-	int right_stick = 10;
-
-	bool gear_shifted = false;
-	bool mode_shifted = false;
-	bool pref_shifted = false;
-
-	int pref;
-	int left_pref = 0;
-	int right_pref = 1;
-
-
+	Drivesystem *drivesystem; // Our drivesystem logic for telop and auto
+	Drivetrain *drivetrain; // Our generic drivetrain class
 };
 
 
