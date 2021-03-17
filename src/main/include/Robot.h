@@ -8,7 +8,7 @@
 /**
  * Robotmap, access to controlmap and motor controllers
  */
-#include "Robotmap.h"
+#include "RobotMap.h"
 
 /**
  * Subsystems

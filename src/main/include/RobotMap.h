@@ -16,24 +16,42 @@
 #include <frc/AnalogGyro.h>
 
 /**
+ * Phoenix CTRE
+ */
+#include <ctre/Phoenix.h>
+
+/**
  * Local headers
  */
-#include "Controlmap.h"
-#include "libs/Drivetrain.h"
+#include "ControlMap.h"
+#include "libs/Drivetrain.h" // Our drivetrain lib
+
+// Use sparkmax's
+#define SPARKMAX
+
 
 struct RobotMap {
 	frc::XboxController xbox1{ ControlMap::Xbox1Port };
 
 	struct Drivesystem {
+
+		#ifdef SPARKMAX
 		// Left
 		rev::CANSparkMax FL{ ControlMap::FL, rev::CANSparkMax::MotorType::kBrushed };
 		rev::CANSparkMax BL{ ControlMap::BL, rev::CANSparkMax::MotorType::kBrushed };
-
 		// Right
 		rev::CANSparkMax FR{ ControlMap::FR, rev::CANSparkMax::MotorType::kBrushed };
 		rev::CANSparkMax BR{ ControlMap::BR, rev::CANSparkMax::MotorType::kBrushed };
+		#else
+		// Left
+		TalonSRX FL{ ControlMap::FL };
+		TalonSRX BL{ ControlMap::BL };
+		// Right
+		TalonSRX FR{ ControlMap::FR };
+		TalonSRX BR{ ControlMap::BR };
+		#endif
 
-		// From our gearbox header
+		// From our gearbox header (Motor groups)
 		MotorController leftMotors = MotorController::Group(FL, BL);
 		MotorController rightMotors = MotorController::Group(FR, BR);
 
