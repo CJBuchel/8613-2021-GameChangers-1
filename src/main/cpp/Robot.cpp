@@ -1,25 +1,67 @@
 #include "Robot.h"
 
+double currentTimeStamp, lastTimeStamp, dt;
+
+// Robot Logic (runs when robot is on regardless of below functions)
+void Robot::RobotInit() {
+	drivetrain = new Drivetrain(robotMap.drivesystem.config); // Initialize a new drivetrain
+	drivetrain->getConfig().leftDrive.transmission->setInverted(true); // Invert one side
+	drivetrain->getConfig().rightDrive.transmission->setInverted(false);
+	drivetrain->output2NT(true); // Output drivetrain values to network tables, (goes to shuffleboard or smart dashboard)
+
+	drivesystem = new Drivesystem(*drivetrain); // initialize your drivesystem logic and pass drivetrain in
+}
+
+void Robot::RobotPeriodic() {
+	// Constantly looping code after robot has turned on. (Cannot control motors in here as they are locked until teleop/auto/test is started)
+	drivetrain->update(); // Global drivetrain update (doesn't matter if it's in auto or teleop, the drivetrain updates the power set to it. Wheras drivesystem is our logic for specific things, teleop or auto)
+}
+
+// Dissabled Robot Logic
+void Robot::DisabledInit() {}
+void Robot::DisabledPeriodic() {}
+
+// Auto Robot Logic
+void Robot::AutonomousInit() {}
+void Robot::AutonomousPeriodic() {}
+
+// Manual Robot Logic
+void Robot::TeleopInit() {
+	// Might want to zero encoders or something when you start teleop
+	drivetrain->getLeft().encoder->Reset();
+	drivetrain->getRight().encoder->Reset();
+}
+
+void Robot::TeleopPeriodic() {
+	currentTimeStamp = frc::Timer::GetFPGATimestamp();
+	dt = currentTimeStamp - lastTimeStamp;
+
+	drivesystem->updatePeriodic(dt);
+
+	lastTimeStamp = currentTimeStamp;
+}
+
+// Test Logic 
+void Robot::TestInit() {}
+void Robot::TestPeriodic() {}
+
+/**
+ * Don't touch these lines
+ */
+#ifndef RUNNING_FRC_TESTS
+int main() {
+  return frc::StartRobot<Robot>();
+}
+#endif
+
+/*
+
+#include "Robot.h"
+
 
 
 // Robot Logic (runs when robot is on regardless of below functions)
 void Robot::RobotInit() {
-	// init controllers and motors in here
-	DriveTrain* mydrivetrain = new DriveTrain();
-	mydrivetrain->AddMotor(4, rev::CANSparkMax::MotorType::kBrushed, 0); // cannot set ID of motors to 0 else motor will not function
-	mydrivetrain->AddMotor(1, rev::CANSparkMax::MotorType::kBrushed, 0);
-	mydrivetrain->AddMotor(2, rev::CANSparkMax::MotorType::kBrushed, 1);
-	mydrivetrain->AddMotor(3, rev::CANSparkMax::MotorType::kBrushed, 1);
-	
-	t_gear_last_press = std::chrono::system_clock::now();
-	t_mode_last_press = std::chrono::system_clock::now();
-	
-
-	// Initialise Joystick
-	j = new frc::Joystick(0);
-	// Setup default drive mode
-	mode = arcade_drive_mode;
-	pref = left_pref;
 
 
 }
@@ -41,25 +83,19 @@ void Robot::TeleopInit() {
 	// Might want to zero encoders or something when you start teleop
 }
 void Robot::TeleopPeriodic() {
-	// TODO: IMPLEMENT MODE CHANGNG CONTROLS (Pressing start and back simultaneously)
-	
+	float lx = j->GetRawAxis(left_stick_x);
+	float ly = j->GetRawAxis(left_stick_y);
+	float rx = j->GetRawAxis(right_stick_x);
+	float ry = j->GetRawAxis(right_stick_y); 
+	bool is_pref_switch_l = j->GetRawButton(left_stick);
+	bool is_pref_switch_r = j->GetRawButton(right_stick);
 	if (mode == tank_drive_mode) {
-		// Get new speeds
-		float ly = j->GetRawAxis(left_stick_y);//*j->GetRawAxis(1)*j->GetRawAxis(1);
-		float ry = -j->GetRawAxis(right_stick_y);//*j->GetRawAxis(5)*j->GetRawAxis(5);
-
-		// Calculate motor speeds with gears
-		motor_lspeed = ly;
-		motor_rspeed = ry;
-
+		DriveTrain::TankDrive(ly,ry);
 	}
 	else if (mode == arcade_drive_mode) {
 		// Joystick switching preference
 		// Mode switching
 		t_pref_now = std::chrono::system_clock::now();
-		bool is_pref_switch_l = j->GetRawButton(left_stick);
-		bool is_pref_switch_r = j->GetRawButton(right_stick);
-		
 		if (!is_pref_switch_l && !is_pref_switch_r) {
 			t_pref_last_press = t_pref_now;
 			pref_shifted = false;
@@ -79,52 +115,12 @@ void Robot::TeleopPeriodic() {
 			pref_shifted = true;
 		}
 
-
-		// Calculate motor speeds
-		float lx = j->GetRawAxis(left_stick_x);
-		float ly = j->GetRawAxis(left_stick_y);
-		float rx = j->GetRawAxis(right_stick_x);
-		float ry = j->GetRawAxis(right_stick_y); 
-
-		float x = 0;
-		float y = 0;
-		if (fabs(lx) < deadband_threshold && fabs(ly) < deadband_threshold && pref == left_pref) {
-			x = rx;
-			y = ry;
-			float theta = atan2(y,-x);
-			float radius = pow(x*x+y*y,0.5);
-			motor_lspeed = radius*cos(theta-M_PI/4);
-			motor_rspeed = -radius*sin(theta-M_PI/4);
-		}
-		else if (fabs(rx) < deadband_threshold && fabs(ry) < deadband_threshold && pref == right_pref) {
-			x = lx;
-			y = ly;
-			float theta = atan2(y,-x);
-			float radius = pow(x*x+y*y,0.5);
-			motor_lspeed = radius*cos(theta-M_PI/4);
-			motor_rspeed = -radius*sin(theta-M_PI/4);
-		}
-		else if (pref == left_pref) {
-			x = lx;
-			y = ly;
-			float theta = atan2(y,-x);
-			float radius = pow(x*x+y*y,0.5);
-			motor_lspeed = radius*cos(theta-M_PI/4);
-			motor_rspeed = -radius*sin(theta-M_PI/4);
-		}
-		else if (pref == right_pref) {
-			x = rx;
-			y = ry;
-			float theta = atan2(y,-x);
-			float radius = pow(x*x+y*y,0.5);
-			motor_lspeed = radius*cos(theta-M_PI/4);
-			motor_rspeed = -radius*sin(theta-M_PI/4);
-		}
+		DriveTrain::ArcadeDrive(int pref, float lx, float ly, float rx, float ry);
 		
 	}
-	else 
+	else {
 		mode = tank_drive_mode; // First drive mode
-	
+	}
 
 	// Mode switching
 	t_mode_now = std::chrono::system_clock::now();
@@ -160,27 +156,13 @@ void Robot::TeleopPeriodic() {
 	double time_dif1 = duration_elapsed_gear.count();
 	if (time_dif1 > press_delay && !gear_shifted) { // value may have to be fine tuned as to ensure it only changes gear once per dpad press.
 		if (dpad_direction == dpad_right) {
-			gear += gear_increment;
+			DriveTrain::AddToGear(gear_increment);
 		}
 		if (dpad_direction == dpad_left) {
-			gear -= gear_increment;
+			DriveTrain::AddToGear(-gear_increment);
 		}
-		// Restrict gear values
-		gear = clamp(gear, 0, 1);
-		std::cout << "GEAR: " << gear << std::endl;
 		gear_shifted = true;
 	}
-
-	// cap motor speed
-	motor_lspeed = clamp(motor_lspeed)*gear;
-	motor_rspeed = clamp(motor_rspeed)*gear;
-
-	// Set motors to be correct speeds
-	leftF->Set(motor_lspeed);
-	leftB->Set(motor_lspeed);
-	rightF->Set(motor_rspeed);
-	rightB->Set(motor_rspeed);
-
 
 }
 
@@ -188,15 +170,5 @@ void Robot::TeleopPeriodic() {
 void Robot::TestInit() {}
 void Robot::TestPeriodic() {}
 
-
-
-
-/**
- * Don't touch these lines
- */
-#ifndef RUNNING_FRC_TESTS
-int main() {
-  return frc::StartRobot<Robot>();
-}
-#endif
+*/
 
